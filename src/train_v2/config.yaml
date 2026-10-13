@@ -1,0 +1,56 @@
+# Diagram IR model - training config (read by `python -m train_v2`).
+run_name: v2-qwen35-0.8b
+model_path: D:/data/models/Qwen__Qwen3.5-0.8B
+output_root: D:/data/diagram_extraction/runs
+seed: 42
+
+data:
+  root: D:/data/diagram_extraction/processed_v2       # <source>.jsonl from build_dataset
+  images_root: D:/data/diagram_extraction             # sample image paths are relative to this
+  min_pixels: 65536          # 256x256
+  max_pixels: 1254400        # ~1120x1120 -> at most ~1225 visual tokens
+  max_target_chars: 4500     # skip giant targets (> ~1500 tokens)
+  layout_prob: 0.5           # samples with boxes: train the "with boxes" prompt half the time
+  pad_multiple: 128          # pad sequence lengths -> few kernel shapes to compile
+  # Per epoch: cap = max rows taken from the source, weight = repeat factor (<1 subsamples).
+  # Sources that are not built yet are skipped with a warning.
+  sources:
+    flowgen:              {weight: 1.0}
+    didi:                 {weight: 1.0, cap: 12000}
+    flowvqa:              {weight: 1.5}
+    flowchart_to_mermaid: {weight: 1.5}
+    hdbpmn:               {weight: 4.0}
+    logicbench_1k:        {weight: 3.0}
+    image_to_mermaid_v3:  {weight: 1.0}
+    cas2uml:              {weight: 3.0}
+    plantuml_stack_v2:    {weight: 1.0, cap: 8000}
+
+train:
+  epochs: 1
+  optimizer: adamw8bit       # adamw8bit (bitsandbytes) | adamw (fp32 states, ~5 GB more VRAM)
+  max_steps: null            # optional hard cap on optimizer steps
+  batch_size: 4
+  grad_accum: 4              # effective batch 16
+  lr: 2.0e-5
+  vision_lr_scale: 0.5       # vision tower trains at half the LR
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  min_lr_ratio: 0.1
+  max_grad_norm: 1.0
+  grad_checkpointing: true
+  vram_fraction: 0.94        # hard cap: OOM (batch skipped) instead of silent spill to system RAM
+  resume: auto               # auto = continue from the newest checkpoint in the run dir
+  log_every: 10
+  smoke_steps: 8
+  num_workers: 6            # DataLoader processes doing image decode + resize
+
+eval:
+  every_steps: 500
+  val_loss_samples: 256
+  gen_samples: 64
+  gen_batch_size: 8
+  gen_max_new_tokens: 1536
+
+save:
+  every_steps: 250          # ~28 min; limits loss from a power cut
+  keep_last: 2

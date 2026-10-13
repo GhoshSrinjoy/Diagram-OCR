@@ -1,0 +1,60 @@
+# Diagram IR model - RL stage, second run: the same DAPO-style GRPO with the corrected metric (v2)
+# as reward. The first run (v2-rl-dapo) learned to drop edges that end at pools, which metric v1
+# could never credit, so its hand-drawn BPMN gain was partly an artifact.
+# Starts from the best model so far: rl-half-stage3 = stage2 + (rl - stage3) + 0.5 * (stage3 - stage2),
+# test edge F1 0.836 vs stage 2's 0.818 (metric v2, same 580 images).
+# Launch:  .\launch.ps1 -Module train_v2.rl -Config train_v2\config_rl_m2.yaml
+run_name: v2-rl-dapo-m2
+init_from: D:/data/diagram_extraction/runs/merges/rl-half-stage3
+output_root: D:/data/diagram_extraction/runs
+seed: 7
+
+data:
+  root: D:/data/diagram_extraction/processed_v2
+  images_root: D:/data/diagram_extraction
+  min_pixels: 65536
+  max_pixels: 1254400
+  max_target_chars: 3000
+
+rl:
+  steps: 300
+  smoke_steps: 4
+  prompts_per_step: 4
+  group_size: 6
+  temperature: 1.0
+  top_p: 1.0
+  max_new_tokens: 1536
+  length_factor: 1.6
+  overlong_penalty: 0.2
+  reward_weights: {edge_f1: 0.5, node_f1: 0.2, edge_label_f1: 0.2, valid: 0.1}
+  lr: 1.0e-6
+  warmup_steps: 10
+  clip_low: 0.2
+  clip_high: 0.28
+  ppo_epochs: 1
+  train_micro_batch: 3
+  max_grad_norm: 1.0
+  max_resample: 3
+  vram_fraction: 0.94
+  candidates_per_source: 120
+  keep_perfect_fraction: 0.1
+  eval_every: 50             # fewer, larger evals: 8 images per source was too noisy to pick "best"
+  eval_per_source: 12
+  # Prompt weights: the starting model's weak spots (metric v2) come first.
+  sources:
+    hdbpmn:               3.0   # also re-learns the pool edges the first RL run dropped
+    logicbench_1k:        3.0
+    plantuml_stack_v2:    2.5   # the one test source where it trails stage 2
+    synth_circuits:       2.5   # 0.76 before the merge, 0.51 after
+    flowgen:              2.0
+    didi:                 1.5
+    image_to_mermaid_v3:  1.5
+    cas2uml:              1.5
+    synth_bpmn:           1.5
+    flowchart_to_mermaid: 1.0
+    synth_plantuml:       1.0
+    flowvqa:              0.5
+
+save:
+  every_steps: 25
+  keep_last: 2

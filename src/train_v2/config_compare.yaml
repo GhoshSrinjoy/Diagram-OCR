@@ -1,0 +1,58 @@
+# Pick the final model after RL. Read by `python -m train_v2.compare`.
+# Launch:  .\launch.ps1 -Module train_v2.compare -Config train_v2\config_compare.yaml
+output: D:/data/diagram_extraction/runs/compare-post-rl
+merge_root: D:/data/diagram_extraction/runs/merges
+
+data:
+  root: D:/data/diagram_extraction/processed_v2
+  images_root: D:/data/diagram_extraction
+  min_pixels: 65536
+  max_pixels: 1254400
+
+candidates:
+  stage1:   D:/data/diagram_extraction/runs/v2-qwen35-0.8b/final
+  stage2:   D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage2/best
+  stage3:   D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage3/best
+  rl-best:  D:/data/diagram_extraction/runs/v2-rl-dapo/best
+  rl-final: D:/data/diagram_extraction/runs/v2-rl-dapo/final
+  rl-m2-best:  D:/data/diagram_extraction/runs/v2-rl-dapo-m2/best    # second RL run (metric v2 reward)
+  rl-m2-final: D:/data/diagram_extraction/runs/v2-rl-dapo-m2/final
+
+# Weighted sums of checkpoints (weights sum to 1); each is also a candidate. All share stage 2 as
+# their ancestor, so stage2 + (rl - stage3) is the RL update without the stage-3 synthetic round.
+merges:
+  rl-on-stage2:
+    D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage2/best: 1.0
+    D:/data/diagram_extraction/runs/v2-rl-dapo/final: 1.0
+    D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage3/best: -1.0
+  rl-half-stage3:
+    D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage2/best: 0.5
+    D:/data/diagram_extraction/runs/v2-rl-dapo/final: 1.0
+    D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage3/best: -0.5
+  rl-m2-wise:      # halfway between the second RL run's start (rl-half-stage3) and its end
+    D:/data/diagram_extraction/runs/merges/rl-half-stage3: 0.5
+    D:/data/diagram_extraction/runs/v2-rl-dapo-m2/final: 0.5
+
+baseline: stage2   # also run on the final set, for a paired comparison with the winner
+
+# Ranking set: validation images (handwritten_fc_fa, rakitha and uml_in_the_wild have no val split).
+# A different seed from RL's own eval subset, so rl-best is not ranked on the images it was picked on.
+select:
+  split: val
+  per_source: 25
+  seed: 11
+  sources: [cas2uml, didi, flowchart_to_mermaid, flowgen, flowvqa, hdbpmn, image_to_mermaid_v3,
+            logicbench_1k, plantuml_stack_v2, synth_bpmn, synth_circuits, synth_plantuml]
+
+# Report set: the 12-source test set (seed 2, 50 per source). The baseline is scored on it again:
+# plantuml_stack_v2 and uml_in_the_wild were rebuilt after stage 2's first test run, which changed
+# their images (and rakitha's, which are drawn after them), so older stage-2 numbers are not paired.
+final:
+  split: test
+  per_source: 50
+  seed: 2
+  sources: [cas2uml, didi, flowchart_to_mermaid, flowgen, flowvqa, handwritten_fc_fa, hdbpmn,
+            image_to_mermaid_v3, logicbench_1k, plantuml_stack_v2, rakitha, uml_in_the_wild]
+
+batch_size: 8
+max_new_tokens: 1536

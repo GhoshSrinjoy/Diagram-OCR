@@ -1,0 +1,60 @@
+# Diagram IR model - STAGE 3: short round on the synthetic circuit / BPMN / PlantUML data,
+# with replay of every earlier source so nothing already learned is forgotten.
+# Launch:  .\launch.ps1 -Config train_v2\config_stage3.yaml
+run_name: v2-qwen35-0.8b-stage3
+model_path: D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage2/best   # stage-2 result
+output_root: D:/data/diagram_extraction/runs
+seed: 42
+
+data:
+  root: D:/data/diagram_extraction/processed_v2
+  images_root: D:/data/diagram_extraction
+  min_pixels: 65536
+  max_pixels: 1254400
+  max_target_chars: 4500
+  layout_prob: 0.5
+  pad_multiple: 128
+  # ~30k samples per epoch: about half synthetic (the weak areas), half replay.
+  sources:
+    synth_circuits:       {weight: 1.0, cap: 5000}
+    synth_bpmn:           {weight: 1.0, cap: 5000}
+    synth_plantuml:       {weight: 1.0, cap: 4000}
+    logicbench_1k:        {weight: 3.0}
+    hdbpmn:               {weight: 4.0}
+    cas2uml:              {weight: 2.0}
+    plantuml_stack_v2:    {weight: 1.0, cap: 2500}
+    flowgen:              {weight: 1.0, cap: 2000}
+    didi:                 {weight: 1.0, cap: 2000}
+    image_to_mermaid_v3:  {weight: 1.0, cap: 2000}
+    flowvqa:              {weight: 1.0, cap: 1000}
+    flowchart_to_mermaid: {weight: 1.0, cap: 700}
+
+train:
+  epochs: 1
+  optimizer: adamw8bit
+  max_steps: null
+  batch_size: 4
+  grad_accum: 4              # effective batch 16
+  lr: 8.0e-6                 # refining a trained model
+  vision_lr_scale: 0.5
+  weight_decay: 0.01
+  warmup_ratio: 0.02
+  min_lr_ratio: 0.1
+  max_grad_norm: 1.0
+  grad_checkpointing: true
+  vram_fraction: 0.94
+  resume: auto
+  log_every: 10
+  smoke_steps: 8
+  num_workers: 6
+
+eval:
+  every_steps: 500
+  val_loss_samples: 256
+  gen_samples: 72
+  gen_batch_size: 8
+  gen_max_new_tokens: 1536
+
+save:
+  every_steps: 250
+  keep_last: 2

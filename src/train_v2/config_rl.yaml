@@ -1,0 +1,56 @@
+# Diagram IR model - RL stage (DAPO-style GRPO on graph metrics). Read by `python -m train_v2.rl`.
+# Launch:  .\launch.ps1 -Module train_v2.rl -Config train_v2\config_rl.yaml
+run_name: v2-rl-dapo
+init_from: D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage3/best   # stage-3 result
+output_root: D:/data/diagram_extraction/runs
+seed: 7
+
+data:
+  root: D:/data/diagram_extraction/processed_v2
+  images_root: D:/data/diagram_extraction
+  min_pixels: 65536
+  max_pixels: 1254400
+  max_target_chars: 3000     # RL rollouts are expensive: skip the longest targets
+
+rl:
+  steps: 300
+  smoke_steps: 4
+  prompts_per_step: 4        # groups per optimizer step
+  group_size: 6              # sampled answers per image (K)
+  temperature: 1.0
+  top_p: 1.0
+  max_new_tokens: 1536
+  length_factor: 1.6         # per-prompt cap = gold length x factor (+64 tokens)
+  overlong_penalty: 0.2      # reward penalty when an answer hits its cap (DAPO overlong shaping)
+  reward_weights: {edge_f1: 0.5, node_f1: 0.2, edge_label_f1: 0.2, valid: 0.1}
+  lr: 1.0e-6
+  warmup_steps: 10
+  clip_low: 0.2
+  clip_high: 0.28            # DAPO clip-higher (matters when ppo_epochs > 1)
+  ppo_epochs: 1              # 1 = on-policy (one update per rollout batch)
+  train_micro_batch: 3       # completions per forward/backward pass
+  max_grad_norm: 1.0
+  max_resample: 3            # dynamic sampling: extra rollout rounds to replace no-signal groups
+  vram_fraction: 0.94
+  candidates_per_source: 120 # greedy pre-pass size per source (pool = mostly not-yet-perfect ones)
+  keep_perfect_fraction: 0.1
+  eval_every: 25
+  eval_per_source: 8
+  # Prompt sampling weights: emphasise what the model still gets wrong.
+  sources:
+    synth_circuits:       3.0
+    logicbench_1k:        3.0
+    synth_bpmn:           3.0
+    hdbpmn:               3.0
+    plantuml_stack_v2:    2.0
+    synth_plantuml:       1.5
+    cas2uml:              1.5
+    flowgen:              1.5
+    image_to_mermaid_v3:  1.0
+    flowchart_to_mermaid: 0.5
+    flowvqa:              0.5
+    didi:                 0.5
+
+save:
+  every_steps: 25
+  keep_last: 2
