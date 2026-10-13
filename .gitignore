@@ -1,0 +1,14 @@
+# Secrets (Hugging Face token etc.)
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local outputs of the CLIs
+exports/
+out/
