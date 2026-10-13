@@ -1,10 +1,16 @@
-# Diagram IR
+# 🐸 Tadpole
 
-**Diagram IR turns a picture of a diagram into structured data you can use.** It handles flowcharts, UML (class, sequence, activity, state), BPMN, ER diagrams, state machines and logic circuits, whether hand-drawn, scanned, photographed or digital. The output is JSON, YAML or XML.
+**A tiny model that reads diagrams.** Show Tadpole a flowchart, a UML diagram, a BPMN process or a logic circuit, whether it is hand-drawn on a whiteboard, scanned or exported from a tool. It hands back every box, every label and every arrow as JSON, YAML or XML.
+
+*Why "Tadpole"? A tadpole is a dot with a tail, which is one node and one arrow: the smallest diagram there is. And at 0.73 GB, Tadpole is small enough to run on an ordinary CPU.*
 
 [Training](TRAINING.md) · [Datasets](DATASETS.md) · [Output format (SPEC)](src/diagram_ir/SPEC.md)
 
-A 0.8B-parameter vision-language model (fine-tuned from [Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B)) reads the image. It writes the diagram's elements, their text and kinds, every arrow with its label, and containers such as lanes and packages, with optional positions. It writes them in **DGM**, a compact line format. Plain code converts DGM losslessly to JSON, YAML or XML. The smallest download is 0.73 GB, and it runs on a CPU through llama.cpp.
+Tadpole is a 0.8B-parameter vision-language model, fine-tuned from [Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B).
+
+- **What it writes:** the diagram's elements, their text and kinds, every arrow with its label, and containers such as lanes and packages, with optional positions.
+- **In what format:** **DGM**, the compact line format of the [Diagram IR](src/diagram_ir/SPEC.md). Plain code converts DGM losslessly to JSON, YAML or XML.
+- **Where it runs:** on a CPU or a GPU through llama.cpp, or with PyTorch.
 
 ## Example
 
@@ -107,13 +113,13 @@ These are the test-set results on 580 images from 12 sources. "Never trained" ma
 
 | Files | Size | Runs on | Edge F1 vs PyTorch | Time per diagram |
 |---|---:|---|---|---|
-| `diagram-ir-0.8b-Q4_K_M.gguf` + `mmproj-diagram-ir-0.8b-f16.gguf` | 0.73 GB | CPU or GPU | same within 0.001 | ~7 s on a desktop CPU (i7-13700K, 16 threads) |
-| `diagram-ir-0.8b-Q8_0.gguf` + `mmproj-diagram-ir-0.8b-f16.gguf` | 1.0 GB | CPU or GPU | same within 0.005 | ~2 s on an RTX 3090 |
+| `tadpole-0.8b-Q4_K_M.gguf` + `mmproj-tadpole-0.8b-f16.gguf` | 0.73 GB | CPU or GPU | same within 0.001 | ~7 s on a desktop CPU (i7-13700K, 16 threads) |
+| `tadpole-0.8b-Q8_0.gguf` + `mmproj-tadpole-0.8b-f16.gguf` | 1.0 GB | CPU or GPU | same within 0.005 | ~2 s on an RTX 3090 |
 | PyTorch checkpoint (safetensors) | 3.4 GB | GPU, or CPU slowly | reference | |
 
 - **Accuracy:** measured on 60 validation images.
 - **Times:** they include starting llama.cpp and loading the model for every image; a long-running server answers faster.
-- **Where the files are:** the GGUF files are built by [`deploy/export_gguf.py`](src/deploy/export_gguf.py). In this setup they are in `D:/data/diagram_extraction/gguf/rl-m2-wise/`. They are not yet published on a model hub.
+- **Where the files are:** the GGUF files are built by [`deploy/export_gguf.py`](src/deploy/export_gguf.py). In this setup they are in `D:/data/diagram_extraction/gguf/tadpole-0.8b/`. They are not yet published on a model hub.
 
 ## Quick start
 
@@ -122,7 +128,7 @@ These are the test-set results on 580 images from 12 sources. "Never trained" ma
 Get a [llama.cpp release](https://github.com/ggml-org/llama.cpp/releases) (b11577 or newer; Qwen3.5 support is required). Then:
 
 ```powershell
-llama-mtmd-cli -m diagram-ir-0.8b-Q4_K_M.gguf --mmproj mmproj-diagram-ir-0.8b-f16.gguf --jinja `
+llama-mtmd-cli -m tadpole-0.8b-Q4_K_M.gguf --mmproj mmproj-tadpole-0.8b-f16.gguf --jinja `
   --image diagram.png -p "Convert this diagram to DGM." `
   --temp 0 -n 1536 --image-min-tokens 64 --image-max-tokens 1225 > diagram.dgm
 ```

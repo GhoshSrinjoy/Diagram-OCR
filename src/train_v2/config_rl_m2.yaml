@@ -1,4 +1,4 @@
-# Diagram IR model - RL stage, second run: the same DAPO-style GRPO with the corrected metric (v2)
+# Tadpole - RL stage, second run: the same DAPO-style GRPO with the corrected metric (v2)
 # as reward. The first run (v2-rl-dapo) learned to drop edges that end at pools, which metric v1
 # could never credit, so its hand-drawn BPMN gain was partly an artifact.
 # Starts from the best model so far: rl-half-stage3 = stage2 + (rl - stage3) + 0.5 * (stage3 - stage2),

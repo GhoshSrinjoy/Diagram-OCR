@@ -1,4 +1,4 @@
-"""Build the v2 (Diagram IR) training data from the raw downloads.
+"""Build Tadpole's training data (Diagram IR targets) from the raw downloads.
 
 Usage (from src/):
     python -m build_dataset --list

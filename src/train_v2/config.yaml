@@ -1,4 +1,4 @@
-# Diagram IR model - training config (read by `python -m train_v2`).
+# Tadpole - training config (read by `python -m train_v2`).
 run_name: v2-qwen35-0.8b
 model_path: D:/data/models/Qwen__Qwen3.5-0.8B
 output_root: D:/data/diagram_extraction/runs

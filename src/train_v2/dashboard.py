@@ -98,7 +98,7 @@ class Dashboard:
 
     def __enter__(self) -> Dashboard:
         if self.enabled:
-            self.console.set_window_title(f"Diagram IR training - {self.state.run_name}")
+            self.console.set_window_title(f"Tadpole training - {self.state.run_name}")
             self.live = Live(self.render(), console=self.console, refresh_per_second=4, screen=True,
                              get_renderable=self.render)
             self.live.__enter__()
@@ -117,7 +117,7 @@ class Dashboard:
         rate = elapsed / done if done > 0 else 0.0
         eta = rate * (s.total_steps - s.step) if done > 0 else 0.0
         top = Text.assemble(
-            ("Diagram IR  ", "bold cyan"), (s.run_name, "bold"), ("  ·  ", "dim"), (s.model_name, ""),
+            ("Tadpole  ", "bold cyan"), (s.run_name, "bold"), ("  ·  ", "dim"), (s.model_name, ""),
             ("  ·  ", "dim"), (s.phase.upper(), _phase_style(s.phase)),
         )
         line = Text.assemble(

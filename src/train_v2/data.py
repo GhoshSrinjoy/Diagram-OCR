@@ -1,4 +1,4 @@
-"""Training data for the Diagram IR model: source mixing, prompts, and batch collation.
+"""Training data for Tadpole: source mixing, prompts, and batch collation.
 
 Rows come from processed_v2/<source>.jsonl (see build_dataset). Each epoch is a fresh mixture:
 per source, take its train rows, apply `cap`, scale by `weight` (fractional weights subsample,

@@ -1,4 +1,4 @@
-"""Train the Diagram IR model.
+"""Train Tadpole, the diagram reader.
 
 Usage (from src/, with the D:/envs/diagram Python):
     python -m train_v2                      # full run, live dashboard

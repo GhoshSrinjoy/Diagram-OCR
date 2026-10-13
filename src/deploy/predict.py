@@ -1,4 +1,4 @@
-"""Read diagram images and write their structure as DGM, JSON, YAML or XML (PyTorch / transformers).
+"""Tadpole: read diagram images and write their structure as DGM, JSON, YAML or XML (PyTorch).
 
 Usage (from src/, D:/envs/diagram Python):
     python -m deploy.predict diagram.png                              # DGM to stdout

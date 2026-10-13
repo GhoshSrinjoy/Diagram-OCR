@@ -1,7 +1,7 @@
 version: 1
 
 description: >
-  v2 (Diagram IR) datasets that the Hugging Face API downloader (download.py) cannot fetch well:
+  Tadpole (v2) datasets that the Hugging Face API downloader (download.py) cannot fetch well:
   git repositories (many-file HF repos hit the 5,000 requests / 5 min API limit; GitHub repos),
   Zenodo records and plain URLs. Download with download_sources.py.
 

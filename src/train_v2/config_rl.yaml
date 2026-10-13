@@ -1,4 +1,4 @@
-# Diagram IR model - RL stage (DAPO-style GRPO on graph metrics). Read by `python -m train_v2.rl`.
+# Tadpole - RL stage (DAPO-style GRPO on graph metrics). Read by `python -m train_v2.rl`.
 # Launch:  .\launch.ps1 -Module train_v2.rl -Config train_v2\config_rl.yaml
 run_name: v2-rl-dapo
 init_from: D:/data/diagram_extraction/runs/v2-qwen35-0.8b-stage3/best   # stage-3 result

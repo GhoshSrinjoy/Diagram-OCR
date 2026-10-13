@@ -1,4 +1,4 @@
-# Diagram IR model - STAGE 2: continue from stage 1 with the full mix (UML added).
+# Tadpole - STAGE 2: continue from stage 1 with the full mix (UML added).
 # Launch:  .\launch.ps1 -Config train_v2\config_stage2.yaml
 run_name: v2-qwen35-0.8b-stage2
 model_path: D:/data/diagram_extraction/runs/v2-qwen35-0.8b/final   # stage-1 result

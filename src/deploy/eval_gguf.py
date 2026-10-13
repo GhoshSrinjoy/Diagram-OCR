@@ -7,7 +7,7 @@ wall time includes loading the model; `load_s` (a 1-token run) estimates that pa
 
 Usage (from src/, D:/envs/diagram Python):
     python -m deploy.eval_gguf --llama-bin D:/data/tools/llama-b11577-cpu --threads 16 \\
-        --model <dir>/diagram-ir-0.8b-Q8_0.gguf --mmproj <dir>/mmproj-diagram-ir-0.8b-f16.gguf \\
+        --model <dir>/tadpole-0.8b-Q8_0.gguf --mmproj <dir>/mmproj-tadpole-0.8b-f16.gguf \\
         --torch-samples D:/data/diagram_extraction/runs/compare-post-rl/<name>.select_samples.jsonl
 """
 

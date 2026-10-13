@@ -130,7 +130,7 @@ datasets:
     notes: AI2D captions for diagram understanding.
 
   # ------------------------------------------------------------------------- #
-  # Stage v2_diagram: image -> structure data for the Diagram IR model (2026-10).
+  # Stage v2_diagram: image -> structure data for Tadpole (2026-10).
   # Licenses checked for a publicly released model; see notes.
   # FlowGen, image-to-mermaid-v3 and LogicBench-1K have too many files for the HF API
   # rate limit: they live in sources_v2.yaml (git clone via download_sources.py).

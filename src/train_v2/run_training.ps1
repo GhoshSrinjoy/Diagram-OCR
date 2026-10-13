@@ -3,7 +3,7 @@ param([switch]$Smoke, [string]$Config = "", [string]$Module = "train_v2")
 
 $python = "D:\envs\diagram\python.exe"
 $src = Split-Path -Parent $PSScriptRoot
-$title = if ($Smoke) { "Diagram IR training (smoke)" } else { "Diagram IR training" }
+$title = if ($Smoke) { "Tadpole training (smoke)" } else { "Tadpole training" }
 $host.UI.RawUI.WindowTitle = $title
 Set-Location $src
 

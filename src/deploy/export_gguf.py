@@ -1,10 +1,10 @@
-"""Export a trained checkpoint to GGUF for llama.cpp (CPU and GPU) in several sizes.
+"""Export a trained Tadpole checkpoint to GGUF for llama.cpp (CPU and GPU) in several sizes.
 
 Writes into --out:
-  diagram-ir-0.8b-bf16.gguf         language model, bf16 (reference quality)
-  diagram-ir-0.8b-Q8_0.gguf         about half the size, near-lossless
-  diagram-ir-0.8b-Q4_K_M.gguf       smallest
-  mmproj-diagram-ir-0.8b-f16.gguf   vision encoder + projector, needed with every size
+  tadpole-0.8b-bf16.gguf         language model, bf16 (reference quality)
+  tadpole-0.8b-Q8_0.gguf         about half the size, near-lossless
+  tadpole-0.8b-Q4_K_M.gguf       smallest
+  mmproj-tadpole-0.8b-f16.gguf   vision encoder + projector, needed with every size
 The DGM chat template (the empty think block the model was trained with) is stored in the model
 files, so `llama-mtmd-cli --jinja` formats prompts exactly as in training.
 
@@ -13,7 +13,7 @@ Usage (from src/, D:/envs/diagram Python):
         --llama-src D:/data/tools/llama.cpp-b11577 --llama-bin D:/data/tools/llama-b11577-cpu
 
 Run a file:
-    llama-mtmd-cli -m diagram-ir-0.8b-Q8_0.gguf --mmproj mmproj-diagram-ir-0.8b-f16.gguf --jinja \\
+    llama-mtmd-cli -m tadpole-0.8b-Q8_0.gguf --mmproj mmproj-tadpole-0.8b-f16.gguf --jinja \\
         --image diagram.png -p "Convert this diagram to DGM." --temp 0 -n 1536 \\
         --image-min-tokens 64 --image-max-tokens 1225
 """
@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 TEMPLATE = Path(__file__).with_name("chat_template.jinja")
-STEM = "diagram-ir-0.8b"
+STEM = "tadpole-0.8b"
 QUANTS = ("Q8_0", "Q4_K_M")
 
 
@@ -60,7 +60,7 @@ def main() -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--llama-src", type=Path, required=True, help="llama.cpp source checkout (converter)")
     ap.add_argument("--llama-bin", type=Path, required=True, help="llama.cpp binaries (llama-quantize)")
-    ap.add_argument("--name", default="Diagram IR 0.8B")
+    ap.add_argument("--name", default="Tadpole 0.8B")
     args = ap.parse_args()
     for f in export(args.checkpoint, args.out, args.llama_src, args.llama_bin, args.name):
         print(f"{f.stat().st_size / 1e6:8.0f} MB  {f}")

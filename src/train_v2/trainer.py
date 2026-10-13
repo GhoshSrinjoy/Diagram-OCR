@@ -1,4 +1,4 @@
-"""Training loop for the Diagram IR model (full fine-tune, vision tower included).
+"""Training loop for Tadpole (full fine-tune, vision tower included).
 
 fp32 master weights + bf16 autocast, AdamW (fused), linear warmup + cosine decay, gradient
 accumulation, gradient checkpointing. Every `eval.every_steps`: validation loss on a fixed

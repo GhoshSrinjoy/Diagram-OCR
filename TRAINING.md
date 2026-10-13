@@ -2,7 +2,7 @@
 
 [README](README.md) · **Training** · [Datasets](DATASETS.md) · [Output format (SPEC)](src/diagram_ir/SPEC.md)
 
-This page explains how the Diagram IR model was trained, why each step was taken, and how to reproduce it: the base model, the three supervised stages, reinforcement learning on graph metrics, weight merging, model selection and the export for download.
+This page explains how Tadpole was trained, why each step was taken, and how to reproduce it: the base model, the three supervised stages, reinforcement learning on graph metrics, weight merging, model selection and the export for download.
 
 ## In short
 
@@ -13,6 +13,7 @@ This page explains how the Diagram IR model was trained, why each step was taken
   2. two runs of reinforcement learning (DAPO-style GRPO) whose reward is graph F1;
   3. weight merges;
   4. selection on validation data, then a final check on held-out test data.
+- **Released as:** Tadpole 0.8B, which is the final merge `rl-m2-wise`.
 - **Result:** on 580 test images from 12 sources, edge F1 is **0.846**, node F1 0.930 and valid output 99.3%. See the [per-source results](README.md#results).
 - **Hardware:** one RTX 3090 (24 GB), i7-13700K, 32 GB RAM, Windows 11. Training took about 24 GPU-hours, plus a few hours of evaluation.
 
@@ -261,11 +262,11 @@ llama.cpp supports Qwen3.5: a text model with architecture `qwen35`, plus a Qwen
 ```powershell
 cd src
 python -m deploy.export_gguf D:/data/diagram_extraction/runs/merges/rl-m2-wise `
-  --out D:/data/diagram_extraction/gguf/rl-m2-wise `
+  --out D:/data/diagram_extraction/gguf/tadpole-0.8b `
   --llama-src D:/data/tools/llama.cpp-b11577 --llama-bin D:/data/tools/llama-b11577-cpu
 python -m deploy.eval_gguf --llama-bin D:/data/tools/llama-b11577-cuda --gpu-layers 99 `
-  --model D:/data/diagram_extraction/gguf/rl-m2-wise/diagram-ir-0.8b-Q8_0.gguf `
-  --mmproj D:/data/diagram_extraction/gguf/rl-m2-wise/mmproj-diagram-ir-0.8b-f16.gguf
+  --model D:/data/diagram_extraction/gguf/tadpole-0.8b/tadpole-0.8b-Q8_0.gguf `
+  --mmproj D:/data/diagram_extraction/gguf/tadpole-0.8b/mmproj-tadpole-0.8b-f16.gguf
 ```
 
 [`deploy/eval_gguf.py`](src/deploy/eval_gguf.py) runs the exported model on 60 validation images (5 per source) and compares it with the PyTorch model on the same images. The full set of measurements was made on the `rl-half-stage3` export, where PyTorch scores 0.886 edge F1:
@@ -296,7 +297,7 @@ python -m train_v2.merge --out D:/data/diagram_extraction/runs/merges/rl-half-st
 # 6. build the final merge, rank all candidates, test the winner
 .\train_v2\launch.ps1 -Module train_v2.compare -Config train_v2\config_compare.yaml
 # 7. export
-python -m deploy.export_gguf D:/data/diagram_extraction/runs/merges/rl-m2-wise --out D:/data/diagram_extraction/gguf/rl-m2-wise --llama-src <llama.cpp source> --llama-bin <llama.cpp binaries>
+python -m deploy.export_gguf D:/data/diagram_extraction/runs/merges/rl-m2-wise --out D:/data/diagram_extraction/gguf/tadpole-0.8b --llama-src <llama.cpp source> --llama-bin <llama.cpp binaries>
 ```
 
 ## Lessons learned
@@ -315,4 +316,4 @@ python -m deploy.export_gguf D:/data/diagram_extraction/runs/merges/rl-m2-wise -
 - **Large logic circuits.** Test edge F1 is 0.53 on LogicBench: 0.71 for circuits with up to 6 gates, but 0.27 for 11 or more, where about 29% of gates go missing. Upscaling the 512×512 images at test time did not help. The next step is synthetic circuits drawn like LogicBench's large ones, then a short training round.
 - **Arrows to pools in hand-drawn BPMN.** The final model writes 59 of the 103 in the test set (stage 2 wrote 110). The next round should replay hdBPMN and synthetic BPMN.
 - **Reading handwriting in flowcharts.** On the never-trained handwritten flowcharts, only 59% of node texts are exact.
-- **A smaller model for CPU.** A "nano" model of about 256M parameters is planned, to make CPU use faster.
+- **A smaller model for CPU.** A baby tadpole is planned: a "nano" model of about 256M parameters, to make CPU use faster.

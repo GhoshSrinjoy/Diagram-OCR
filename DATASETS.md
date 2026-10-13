@@ -2,7 +2,7 @@
 
 [README](README.md) · [Training](TRAINING.md) · **Datasets** · [Output format (SPEC)](src/diagram_ir/SPEC.md)
 
-This page covers everything the Diagram IR model learned from and was tested on: where each dataset comes from, its license, how it was converted and cleaned into training targets, and how much of it each training stage used.
+This page covers everything Tadpole learned from and was tested on: where each dataset comes from, its license, how it was converted and cleaned into training targets, and how much of it each training stage used.
 
 ## At a glance
 
