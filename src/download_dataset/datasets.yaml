@@ -1,8 +1,8 @@
 version: 1
 
 description: >
-  Small, high-priority datasets for the first diagram extraction pipeline pass.
-  The downloader intentionally starts here instead of pulling the full corpus.
+  Hugging Face datasets fetched file by file through the API (repos with few files).
+  Repos with many files, and git / Zenodo / URL sources, are in sources_v2.yaml.
 
 storage:
   output_dir: D:/data/diagram_extraction
@@ -23,26 +23,6 @@ defaults:
     - "**/.gitattributes"
 
 datasets:
-  - key: diagramgen
-    name: OpenRaiser DiagramGen
-    repo_id: OpenRaiser/DiagramGen
-    category: diagram_code
-    gated: true
-    expected_size: 43.7 MB
-    expected_size_bytes: 43691249
-    max_allowed_size: 500 MB
-    local_dir: diagram_code/OpenRaiser__DiagramGen
-    notes: Restricted on Hugging Face. Request access before downloading with --include-gated.
-
-  - key: vgqa
-    name: VGQA
-    repo_id: vgbench/VGQA
-    category: diagram_code
-    expected_size: 15.2 MB
-    expected_size_bytes: 15162193
-    max_allowed_size: 100 MB
-    local_dir: diagram_code/vgbench__VGQA
-    notes: Small visual graph QA dataset.
 
   - key: mermaid_50k
     name: Mermaid 50K
@@ -69,73 +49,12 @@ datasets:
     local_dir: diagram_code/rakitha__mermaid-flowchart-transformer
     notes: Flowchart-to-Mermaid training data.
 
-  - key: diagram_image_to_text
-    name: Diagram Image To Text
-    repo_id: Kamizuru00/diagram_image_to_text
-    category: diagram_code
-    expected_size: 19.0 MB
-    expected_size_bytes: 19027012
-    max_allowed_size: 1 GB
-    local_dir: diagram_code/Kamizuru00__diagram_image_to_text
-    notes: Diagram image to text/code style examples.
-
-  - key: chartqa_hfm4
-    name: ChartQA HFM4
-    repo_id: HuggingFaceM4/ChartQA
-    category: chart_qa
-    expected_size: 964.1 MB
-    expected_size_bytes: 964096451
-    max_allowed_size: 2 GB
-    local_dir: chart_qa/HuggingFaceM4__ChartQA
-    notes: Main small ChartQA candidate for the first chart pass.
-
-  - key: cleaned_plotqa_v2
-    name: Cleaned PlotQA v2
-    repo_id: jrc/cleaned-plotqa-v2
-    category: chart_qa
-    expected_size: 121.9 MB
-    expected_size_bytes: 121860100
-    max_allowed_size: 500 MB
-    local_dir: chart_qa/jrc__cleaned-plotqa-v2
-    notes: Small cleaned PlotQA variant.
-
-  - key: cleaned_figureqa_v2
-    name: Cleaned FigureQA v2
-    repo_id: jrc/cleaned-figureqa-v2
-    category: chart_qa
-    expected_size: 25.0 MB
-    expected_size_bytes: 25002686
-    max_allowed_size: 250 MB
-    local_dir: chart_qa/jrc__cleaned-figureqa-v2
-    notes: Small cleaned FigureQA variant.
-
-  - key: ai2d
-    name: AI2D
-    repo_id: lmms-lab/ai2d
-    category: science_diagram
-    expected_size: 139.5 MB
-    expected_size_bytes: 139467124
-    max_allowed_size: 750 MB
-    local_dir: science_diagrams/lmms-lab__ai2d
-    notes: Educational science diagrams.
-
-  - key: ai2d_caption
-    name: AI2D Caption
-    repo_id: abhayzala/AI2D-Caption
-    category: science_diagram
-    expected_size: 820.0 MB
-    expected_size_bytes: 819960954
-    max_allowed_size: 2 GB
-    local_dir: science_diagrams/abhayzala__AI2D-Caption
-    notes: AI2D captions for diagram understanding.
-
   # ------------------------------------------------------------------------- #
   # Stage v2_diagram: image -> structure data for Tadpole (2026-10).
   # Licenses checked for a publicly released model; see notes.
   # FlowGen, image-to-mermaid-v3 and LogicBench-1K have too many files for the HF API
   # rate limit: they live in sources_v2.yaml (git clone via download_sources.py).
   # ------------------------------------------------------------------------- #
-
 
   - key: flowchart_to_mermaid
     name: Flowchart-to-Mermaid
@@ -147,7 +66,6 @@ datasets:
     max_allowed_size: 500 MB
     local_dir: diagram_code/DangIT02__flowchart-to-mermaid
     notes: MIT. 2,569 flowchart images + Mermaid (earlier flowchart-only release of image-to-mermaid).
-
 
   - key: cas2uml
     name: CAS2UML hand-drawn UML
