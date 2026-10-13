@@ -25,8 +25,16 @@ from diagram_ir import canonicalize, dumps, loads
 
 PROMPT_PLAIN = "Convert this diagram to DGM."
 PROMPT_LAYOUT = "Convert this diagram to DGM with boxes."
-ASSISTANT_MARKER = "<|im_start|>assistant\n<think>\n\n</think>\n\n"
 TOKENS_PER_PATCH_AREA = 32 * 32  # 16 px patches, 2x2 merge -> one visual token per 32x32 px
+# End-of-turn / end-of-text tokens of the supported model families (Qwen; Granite-Docling; SmolVLM).
+END_TOKENS = ("<|im_end|>", "<|endoftext|>", "<|end_of_text|>", "<end_of_utterance>")
+TILED_PLACEHOLDERS = ("<image>", "<fake_token_around_image>", "<global-img>")
+
+
+def stop_token_ids(tokenizer: Any) -> list[int]:
+    """Ids of the END_TOKENS this tokenizer has; generation stops at any of them."""
+    vocab = tokenizer.get_vocab()
+    return [vocab[t] for t in END_TOKENS if t in vocab]
 
 
 @dataclass
@@ -158,28 +166,45 @@ def target_for(ex: Example, salt: int, layout_prob: float) -> tuple[str, str]:
 
 
 class Collator:
-    """Builds model inputs; labels cover the answer (DGM + <|im_end|>) only."""
+    """Builds model inputs; labels cover the answer (DGM + end-of-turn token) only.
+
+    Works for Qwen-style processors (images sized by a pixel budget) and Idefics3-style ones
+    (Granite-Docling, SmolVLM: 512-px tiles, one image list per sample, the checkpoint's own size)."""
 
     def __init__(self, processor: Any, min_pixels: int, max_pixels: int, layout_prob: float,
                  pad_multiple: int = 128):
         self.processor = processor
         self.tok = processor.tokenizer
-        self.images_kwargs = {"size": {"longest_edge": max_pixels, "shortest_edge": min_pixels}}
+        self.tiled = hasattr(processor, "image_seq_len")
+        self.images_kwargs = {} if self.tiled else {"size": {"longest_edge": max_pixels,
+                                                             "shortest_edge": min_pixels}}
         self.layout_prob = layout_prob
         # Padding lengths to a multiple keeps the set of sequence shapes small, so the Triton
         # (linear-attention) kernels compile a few dozen variants instead of one per length.
         self.pad_multiple = pad_multiple
-        self.marker = self.tok(ASSISTANT_MARKER, add_special_tokens=False)["input_ids"]
-        self.im_end = self.tok.convert_tokens_to_ids("<|im_end|>")
+        # The answer starts right after the assistant header the template adds for generation
+        # (for Qwen that includes the empty think block).
+        user = self._messages(PROMPT_PLAIN)
+        with_header = processor.apply_chat_template(user, add_generation_prompt=True, enable_thinking=False)
+        without = processor.apply_chat_template(user, add_generation_prompt=False, enable_thinking=False)
+        assert with_header.startswith(without), "chat template: generation prompt is not a suffix"
+        self.marker = self.tok(with_header[len(without):], add_special_tokens=False)["input_ids"]
+        self.stop_ids = set(stop_token_ids(self.tok))
         self.pad_id = self.tok.pad_token_id
 
+    @staticmethod
+    def _messages(prompt: str) -> list[dict]:
+        return [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
+
+    def _images(self, images: list[Image.Image]) -> list:
+        return [[im] for im in images] if self.tiled else images
+
     def prompt_text(self, prompt: str) -> str:
-        msgs = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
-        return self.processor.apply_chat_template(msgs, add_generation_prompt=True, enable_thinking=False)
+        return self.processor.apply_chat_template(self._messages(prompt), add_generation_prompt=True,
+                                                  enable_thinking=False)
 
     def full_text(self, prompt: str, answer: str) -> str:
-        msgs = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]},
-                {"role": "assistant", "content": [{"type": "text", "text": answer}]}]
+        msgs = self._messages(prompt) + [{"role": "assistant", "content": [{"type": "text", "text": answer}]}]
         return self.processor.apply_chat_template(msgs, enable_thinking=False)
 
     def load_image(self, path: str) -> Image.Image:
@@ -194,13 +219,19 @@ class Collator:
             return im.convert("RGB")
 
     def __call__(self, batch: list[Example], salt: int = 0) -> dict[str, torch.Tensor]:
+        if self.tiled:
+            # Idefics3-style processors count "<image>" anywhere in the text as an image slot, so a
+            # target containing it (one PlantUML diagram has `list<image>`) cannot be encoded: skip it.
+            kept = [ex for ex in batch if not any(p in ex.dgm for p in TILED_PLACEHOLDERS)]
+            assert kept, "every sample in the batch contains an image placeholder string"
+            batch = kept
         texts, images = [], []
         for ex in batch:
             prompt, answer = target_for(ex, salt, self.layout_prob)
             texts.append(self.full_text(prompt, answer))
             images.append(self.load_image(ex.image))
         self.tok.padding_side = "right"
-        enc = self.processor(text=texts, images=images, return_tensors="pt", padding=True,
+        enc = self.processor(text=texts, images=self._images(images), return_tensors="pt", padding=True,
                              pad_to_multiple_of=self.pad_multiple, images_kwargs=self.images_kwargs)
         labels = torch.full_like(enc["input_ids"], -100)
         for i, ids in enumerate(enc["input_ids"].tolist()):
@@ -208,10 +239,8 @@ class Collator:
             if start < 0:
                 continue
             start += len(self.marker)
-            try:
-                end = ids.index(self.im_end, start) + 1  # include <|im_end|> (the stop signal)
-            except ValueError:
-                end = len(ids)
+            # up to and including the end-of-turn token (the stop signal)
+            end = next((j + 1 for j in range(start, len(ids)) if ids[j] in self.stop_ids), len(ids))
             labels[i, start:end] = enc["input_ids"][i, start:end]
         enc["labels"] = labels
         return dict(enc)
@@ -220,7 +249,7 @@ class Collator:
         texts = [self.prompt_text(PROMPT_LAYOUT if with_layout else PROMPT_PLAIN) for _ in batch]
         images = [self.load_image(ex.image) for ex in batch]
         self.tok.padding_side = "left"
-        enc = self.processor(text=texts, images=images, return_tensors="pt", padding=True,
+        enc = self.processor(text=texts, images=self._images(images), return_tensors="pt", padding=True,
                              images_kwargs=self.images_kwargs)
         self.tok.padding_side = "right"
         return dict(enc)

@@ -32,6 +32,7 @@ from diagram_ir.metrics import aggregate, score
 
 from .dashboard import Dashboard, State, TailHandler
 from .data import (
+    END_TOKENS,
     Collator,
     ImageSizeCache,
     MicroBatches,
@@ -40,6 +41,7 @@ from .data import (
     eval_subset,
     load_rows,
     steps_per_epoch,
+    stop_token_ids,
     to_examples,
 )
 
@@ -108,14 +110,20 @@ class Trainer:
     def _load_model(self) -> None:
         path = self.cfg["model_path"]
         self.processor = AutoProcessor.from_pretrained(path)
+        edge = self.cfg["data"].get("image_longest_edge")
+        if edge and hasattr(self.processor, "image_seq_len"):
+            # Tiled (Idefics3-style) models: cap the resized image, i.e. the number of 512-px tiles,
+            # which sets the vision cost. Saved with every checkpoint, so evaluation and the
+            # llama.cpp export (preproc_image_size) use the same size.
+            self.processor.image_processor.size = {"longest_edge": int(edge)}
         self.model = AutoModelForImageTextToText.from_pretrained(path, dtype=torch.float32).cuda()
         t = self.cfg["train"]
         if t.get("grad_checkpointing", True):
             self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         self.model.config.use_cache = False
-        # Chat answers end with <|im_end|>, but the base checkpoint's generation config only stops
-        # at <|endoftext|>: generation ran past the answer into a new "assistant" turn. Stop at
-        # both - this is saved with every checkpoint, so inference with the model stops too.
+        # Chat answers end with an end-of-turn token (<|im_end|> for Qwen), but a base checkpoint's
+        # generation config may only stop at end-of-text: generation then ran past the answer into
+        # a new turn. Stop at every END_TOKEN the tokenizer has - saved with every checkpoint.
         self.stop_ids = stop_token_ids(self.processor.tokenizer)
         self.model.generation_config.eos_token_id = self.stop_ids
         d = self.cfg["data"]
@@ -125,7 +133,7 @@ class Trainer:
         for name, p in self.model.named_parameters():
             if not p.requires_grad:
                 continue
-            if "visual" in name:
+            if "visual" in name or "vision_model" in name:  # Qwen / Idefics3 vision towers
                 vision.append(p)
             elif p.ndim < 2 or "norm" in name or "embed" in name:
                 no_decay.append(p)
@@ -345,6 +353,12 @@ class Trainer:
                     break
                 if self.step % save_every == 0:
                     self._save(self.step)
+                if t.get("stop_after_steps") and self.step >= t["stop_after_steps"] and not self.smoke:
+                    # pause (e.g. to compare candidates); the schedule is unchanged, so resuming
+                    # without this option continues exactly where it left off
+                    log.info("pausing at step %d (stop_after_steps)", self.step)
+                    self.stop_requested = True
+                    break
             if self.stop_requested:
                 break
             self.epoch += 1
@@ -417,18 +431,13 @@ class Trainer:
             self._save(self.step, tag="best")
 
 
-def stop_token_ids(tokenizer: Any) -> list[int]:
-    ids = [tokenizer.convert_tokens_to_ids(t) for t in ("<|im_end|>", "<|endoftext|>")]
-    return [i for i in ids if isinstance(i, int) and i >= 0]
-
-
 def decode_answers(tokenizer: Any, new_tokens: torch.Tensor) -> list[str]:
-    """Decode generated answers, cutting each at its first <|im_end|> (end of the turn)."""
+    """Decode generated answers, cutting each at its first end-of-turn / end-of-text token."""
     texts = tokenizer.batch_decode(new_tokens, skip_special_tokens=False)
     out = []
     for t in texts:
-        t = t.split("<|im_end|>", 1)[0].replace("<|endoftext|>", "")
-        out.append(re.sub(r"<\|[^|>]+\|>", "", t))
+        cut = min((i for i in (t.find(e) for e in END_TOKENS) if i >= 0), default=len(t))
+        out.append(re.sub(r"<\|[^|>]+\|>", "", t[:cut]).strip())
     return out
 
 
