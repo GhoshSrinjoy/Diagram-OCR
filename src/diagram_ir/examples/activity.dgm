@@ -1,0 +1,20 @@
+# UML activity diagram with swimlanes, guards, decision/merge.
+diagram activity dir=TB
+node n1 initial @130,30,170,70
+node n2 action "Place order" @60,110,240,160
+node n3 action "Check stock" @520,200,720,250
+node n4 decision @590,290,650,350
+node n5 action "Ship order" @380,410,580,460
+node n6 action "Cancel order" @680,410,900,460
+node n7 merge @590,520,650,580
+node n8 final @600,640,640,680
+edge n1 n2
+edge n2 n3
+edge n3 n4
+edge n4 n5 "[in stock]"
+edge n4 n6 "[out of stock]"
+edge n5 n7
+edge n6 n7
+edge n7 n8
+group g1 lane "Customer" @0,0,300,1000 : n1 n2
+group g2 lane "Shop" @300,0,1000,1000 : n3 n4 n5 n6 n7 n8

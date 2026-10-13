@@ -1,0 +1,26 @@
+# UML class diagram: attributes/operations, interface, enum, multiplicities.
+diagram class
+node n1 class "Customer" @40,40,260,200
+  attr "-name: String"
+  attr "-email: String"
+  op "+placeOrder(): Order"
+node n2 class "Order" @380,40,620,220 stereo=entity
+  attr "-id: int"
+  attr "-date: Date"
+  op "+total(): float"
+node n3 interface "Payable" @720,60,960,160
+  op "+pay(amount: float): bool"
+node n4 enum "OrderStatus" @40,420,260,560
+  lit "NEW"
+  lit "PAID"
+  lit "SHIPPED"
+node n5 class "OrderLine" @380,430,620,530
+  attr "-qty: int"
+node n6 class "Product" @720,420,960,540
+  attr "-sku: String"
+  attr "-price: float"
+edge n1 n2 "places" sl=1 tl=0..*
+edge n2 n3 realize
+edge n2 n4 depend
+edge n2 n5 compose sl=1 tl=1..*
+edge n5 n6 assoc_dir tl=1

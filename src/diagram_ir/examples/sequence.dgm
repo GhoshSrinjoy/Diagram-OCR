@@ -1,0 +1,18 @@
+# UML sequence diagram: ordered messages, self-call, replies, alt fragment with two operands.
+diagram sequence
+node n1 actor "User" @30,20,130,90
+node n2 participant "Web App" @260,30,420,80
+node n3 participant "Auth Service" @540,30,720,80
+node n4 database "User DB" @840,20,960,90
+edge n1 n2 "enter credentials"
+edge n2 n3 "login(user, pwd)"
+edge n3 n4 "findUser(user)"
+edge n4 n3 reply "user record"
+edge n3 n3 "verifyPassword()"
+edge n3 n2 reply "token"
+edge n2 n1 reply "dashboard"
+edge n3 n2 reply "401 Unauthorized"
+edge n2 n1 reply "error message"
+group g1 alt @200,560,780,960
+group g2 operand "[valid]" parent=g1 : e6 e7
+group g3 operand "[invalid]" parent=g1 : e8 e9

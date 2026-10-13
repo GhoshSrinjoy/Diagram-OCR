@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diagram-ir/schema/1.0/diagram.json",
+  "title": "Diagram IR 1.0",
+  "description": "Structured representation of a diagram image (flowchart, UML, ER, state machine, logic circuit, generic graph). Per-type kind vocabularies are listed in SPEC.md and checked by diagram_ir.validate(); this schema checks structure.",
+  "type": "object",
+  "required": ["format", "version", "type", "nodes", "edges", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "diagram-ir"},
+    "version": {"type": "string", "pattern": "^1\\.[0-9]+$"},
+    "type": {"enum": ["flowchart", "activity", "sequence", "class", "state", "er", "circuit", "graph"]},
+    "direction": {"enum": ["TB", "BT", "LR", "RL"]},
+    "title": {"type": "string"},
+    "nodes": {"type": "array", "items": {"$ref": "#/$defs/node"}},
+    "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+    "groups": {"type": "array", "items": {"$ref": "#/$defs/group"}},
+    "attrs": {"$ref": "#/$defs/attrs"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+    "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "coord": {"type": "integer", "minimum": 0, "maximum": 1000},
+    "bbox": {
+      "description": "[x1, y1, x2, y2], normalized to the image: 0 = left/top, 1000 = right/bottom.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/coord"},
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "attrs": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+      "additionalProperties": {"type": "string"}
+    },
+    "member": {
+      "type": "object",
+      "required": ["kind", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["attr", "op", "lit"]},
+        "text": {"type": "string"},
+        "bbox": {"$ref": "#/$defs/bbox"}
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"$ref": "#/$defs/kind"},
+        "text": {"type": "string"},
+        "bbox": {"$ref": "#/$defs/bbox"},
+        "stereotype": {"type": "string"},
+        "members": {"type": "array", "items": {"$ref": "#/$defs/member"}},
+        "attrs": {"$ref": "#/$defs/attrs"}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "source", "target", "kind", "directed"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^e[1-9][0-9]*$"},
+        "source": {"$ref": "#/$defs/id"},
+        "target": {"$ref": "#/$defs/id"},
+        "kind": {"$ref": "#/$defs/kind"},
+        "directed": {"type": "boolean"},
+        "label": {"type": "string"},
+        "source_label": {"type": "string"},
+        "target_label": {"type": "string"},
+        "source_port": {"type": "string"},
+        "target_port": {"type": "string"},
+        "style": {"enum": ["dashed", "dotted", "thick"]},
+        "path": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"type": "array", "items": {"$ref": "#/$defs/coord"}, "minItems": 2, "maxItems": 2}
+        },
+        "attrs": {"$ref": "#/$defs/attrs"}
+      }
+    },
+    "group": {
+      "type": "object",
+      "required": ["id", "kind", "text", "members"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"$ref": "#/$defs/kind"},
+        "text": {"type": "string"},
+        "members": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+        "parent": {"$ref": "#/$defs/id"},
+        "bbox": {"$ref": "#/$defs/bbox"},
+        "attrs": {"$ref": "#/$defs/attrs"}
+      }
+    }
+  }
+}

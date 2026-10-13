@@ -1,0 +1,14 @@
+# Digital logic: half adder. Signal wires are directed driver -> sink.
+diagram circuit dir=LR
+node n1 input "A" @40,200,100,240
+node n2 input "B" @40,500,100,540
+node n3 xor @400,170,520,270
+node n4 and @400,470,520,570
+node n5 output "S" @850,200,910,240
+node n6 output "C" @850,500,910,540
+edge n1 n3
+edge n1 n4
+edge n2 n3
+edge n2 n4
+edge n3 n5
+edge n4 n6

@@ -1,0 +1,20 @@
+# Flowchart with a decision and a loop-back edge (rakitha test "Automobile Manufacturing").
+diagram flowchart dir=TB
+node n1 terminal "Start" @400,20,600,70
+node n2 process "Install Engine" @380,110,620,160
+node n3 process "Install Transmission" @380,200,620,250
+node n4 process "Install Drivetrain Components" @350,290,650,340
+node n5 process "Inspect Installation" @380,380,620,430
+node n6 decision "Quality Check" @420,470,580,570
+node n7 process "Drivetrain Installation Complete" @150,640,450,690
+node n8 process "Review & Correct Issues" @600,640,850,690
+node n9 terminal "End" @200,760,400,810
+edge n1 n2
+edge n2 n3
+edge n3 n4
+edge n4 n5
+edge n5 n6
+edge n6 n7 "Pass"
+edge n6 n8 "Fail"
+edge n7 n9
+edge n8 n2 style=dashed

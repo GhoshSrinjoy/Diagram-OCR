@@ -1,0 +1,16 @@
+# UML state machine with a composite state; transitions may target the container.
+diagram state
+node n1 initial @60,40,100,80
+node n2 state "Idle" @30,150,170,210
+node n3 initial @420,170,450,200
+node n4 state "Validating" @380,250,560,310
+node n5 state "Charging" @380,400,560,460
+  attr "entry / reserveFunds()"
+node n6 final @800,420,840,460
+edge n1 n2
+edge n2 g1 "start"
+edge n3 n4
+edge g1 n2 "cancel"
+edge n4 n5 "valid"
+edge n5 n6 "paid"
+group g1 composite "Active" @330,130,620,500 : n3 n4 n5
