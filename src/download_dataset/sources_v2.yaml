@@ -1,0 +1,123 @@
+version: 1
+
+description: >
+  v2 (Diagram IR) datasets that the Hugging Face API downloader (download.py) cannot fetch well:
+  git repositories (many-file HF repos hit the 5,000 requests / 5 min API limit; GitHub repos),
+  Zenodo records and plain URLs. Download with download_sources.py.
+
+storage:
+  output_dir: D:/data/diagram_extraction
+
+# `use`: train = license allows training a publicly released model;
+#        eval_only = keep out of the training mix (non-commercial, no license, ...).
+datasets:
+  - key: flowgen
+    name: FlowGen (ICLR 2026)
+    method: git
+    url: https://huggingface.co/datasets/Anonymous112233/FlowGen
+    local_dir: diagram_code/Anonymous112233__FlowGen
+    expected_size_bytes: 5557257461
+    strip_git: true
+    license: Apache-2.0
+    use: train
+    notes: >
+      60,481 files (png + triplets .txt + render code .mmd/.dot/...). 11,520 train / 8,640 test,
+      renderers mermaid/graphviz/plantuml/diagrams, test has clean + scanned variants.
+
+  - key: image_to_mermaid_v3
+    name: Image-to-Mermaid v3
+    method: git
+    url: https://huggingface.co/datasets/DangIT02/image-to-mermaid-v3
+    local_dir: diagram_code/DangIT02__image-to-mermaid-v3
+    expected_size_bytes: 1208229442
+    strip_git: true
+    license: MIT
+    use: train
+    notes: 15,099 images over 26 Mermaid diagram types, 3 difficulty tiers.
+
+  - key: logicbench_1k
+    name: LogicBench-1K
+    method: git
+    url: https://huggingface.co/datasets/TKCL-HF/LogicBench-1K
+    local_dir: circuits/TKCL-HF__LogicBench-1K
+    expected_size_bytes: 57590859
+    strip_git: true
+    license: CC-BY-4.0
+    use: train
+    notes: 1,000 digital logic circuit images with directed-graph JSON.
+
+  - key: flowvqa
+    name: FlowVQA
+    method: git
+    url: https://github.com/flowvqa/flowvqa
+    local_dir: diagram_code/flowvqa__flowvqa
+    expected_size_bytes: 1694089473
+    strip_git: true
+    license: MIT
+    use: train
+    notes: >
+      2,272 flowcharts with Mermaid code (+ 22,413 QA); also a bottom-to-top rendering of each.
+      README still says "under construction".
+
+  - key: hdbpmn
+    name: hdBPMN
+    method: git
+    url: https://github.com/dwslab/hdBPMN
+    local_dir: handwritten/dwslab__hdBPMN
+    expected_size_bytes: 593219587
+    strip_git: true
+    license: CC-BY-4.0
+    use: train
+    notes: 704 hand-drawn BPMN images with BPMN XML (shapes, edges with waypoints) and word boxes.
+
+  - key: handwritten_diagrams
+    name: Handwritten diagram datasets (FA, FC_A, FC_B, FC_Bscan, hdBPMN-COCO)
+    method: git
+    url: https://github.com/bernhardschaefer/handwritten-diagram-datasets
+    local_dir: handwritten/bernhardschaefer__handwritten-diagram-datasets
+    expected_size_bytes: 715685898
+    strip_git: true
+    license: mixed (FC_A CC-BY-NC-SA; FA, FC_B, FC_Bscan none; hdBPMN CC-BY)
+    use: eval_only
+    notes: >
+      2,565 hand-drawn flowcharts / automata in COCO format with bboxes, text and arrow head/tail
+      keypoints. Licenses do not allow training a public model; use as a hand-drawn test set.
+
+  - key: uml_in_the_wild
+    name: UML-in-the-Wild (PlantUML from open-source repos)
+    method: zenodo
+    record: 20537143
+    files: [README.md, LICENSE, puml_files.zip, uml_metadata_enriched.json, validation.zip]
+    local_dir: uml/zenodo__uml-in-the-wild
+    expected_size_bytes: 285002201
+    license: CC-BY-4.0 (compilation; each file keeps its source repository license)
+    use: train
+    notes: >
+      143,427 PlantUML files (class 51.6%, sequence 24.6%, activity 6.8%, ...). The 37.7 GiB
+      puml_images.zip is skipped on purpose - we render ourselves to get exact boxes.
+
+  - key: cghd
+    name: CGHD - handwritten circuit diagrams (v16)
+    method: zenodo
+    record: 17469897
+    files: [cghd-zenodo-16.zip]
+    local_dir: circuits/zenodo__cghd-v16
+    expected_size_bytes: 4876870577
+    license: CC-BY-4.0
+    use: train
+    notes: 3,269 photos of hand-drawn electrical circuits; Pascal VOC boxes, rotations, text strings.
+
+  - key: didi
+    name: DiDi - Digital Ink Diagram data
+    method: url
+    urls:
+      - https://storage.googleapis.com/digital_ink_diagram_data/diagrams_20200131.ndjson
+      - https://storage.googleapis.com/digital_ink_diagram_data/diagrams_wo_text_20200131.ndjson
+      - https://storage.googleapis.com/digital_ink_diagram_data/diagrams_20200131_prompts.tgz
+    local_dir: handwritten/google__didi
+    expected_size_bytes: 2345314692
+    license: CC-BY-4.0
+    use: train
+    notes: >
+      58,655 hand-drawn ink drawings (22,287 with text) of 6,555 GraphViz prompts; the prompts
+      archive holds the .dot/.xdot/.png that give each drawing its full graph structure.
