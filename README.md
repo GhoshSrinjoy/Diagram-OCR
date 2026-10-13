@@ -84,6 +84,10 @@ The full vocabularies are in the [spec](src/diagram_ir/SPEC.md#2-vocabularies).
 
 - **Boxes (positions).** Ask for "DGM with boxes" and every element also gets a box in 0–1000 coordinates. Boxes are trained only where the training data had real geometry: hand-drawn BPMN photos (hdBPMN), synthetic BPMN and synthetic circuits.
 
+<img src="docs/images/example_boxes.jpg" width="640" alt="Boxes predicted by Tadpole, drawn on a photo of a hand-drawn BPMN diagram">
+
+*Tadpole's boxes drawn back onto a photo of a hand-drawn BPMN diagram (hdBPMN test split), from [`demo.ipynb`](demo.ipynb).*
+
 ## Results
 
 These are the test-set results on 580 images from 12 sources. "Never trained" marks the three sources whose licenses kept them out of training. For those, the model has never seen the style at all. All numbers use metric v2; see [Evaluation](TRAINING.md#evaluation).
@@ -122,6 +126,8 @@ These are the test-set results on 580 images from 12 sources. "Never trained" ma
 - **Where the files are:** the GGUF files are built by [`deploy/export_gguf.py`](src/deploy/export_gguf.py). In this setup they are in `D:/data/diagram_extraction/gguf/tadpole-0.8b/`. They are not yet published on a model hub.
 
 ## Quick start
+
+The quickest way to see Tadpole work is [`demo.ipynb`](demo.ipynb). It runs the commands below on example images.
 
 ### With llama.cpp (CPU or GPU, no Python needed to run the model)
 
@@ -204,7 +210,7 @@ The full definition is in [SPEC.md](src/diagram_ir/SPEC.md).
 | [`src/train_v2/`](src/train_v2) | Supervised training, RL, evaluation, weight merging, model comparison, configs, Windows launcher and dashboard |
 | [`src/deploy/`](src/deploy) | GGUF export and check, `predict` CLI, chat template |
 | [`docs/images/`](docs/images) | Images used in these docs |
-| `src/train/`, `src/download_model/`, `demo.ipynb`, `TODO.md` | The first (v1) experiment and its plan: a Qwen2-VL-2B LoRA, kept for reference |
+| [`demo.ipynb`](demo.ipynb) | Demo: Tadpole on example images through llama.cpp, with JSON/YAML/XML output and its boxes drawn on a photo |
 
 Code is linted with ruff (config: [`ruff.toml`](ruff.toml)) and the format library has 201 tests:
 

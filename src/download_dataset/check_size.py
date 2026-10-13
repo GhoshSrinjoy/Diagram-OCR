@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import argparse
-import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import download
-
 
 ALL_TOKENS = {"a", "all", "*", "#"}
 
@@ -28,8 +26,10 @@ def parse_args() -> argparse.Namespace:
         help="Dataset key, repo_id, number, or comma-separated list. Repeatable.",
     )
     parser.add_argument("--all", action="store_true", help="Select every enabled dataset in the manifest.")
-    parser.add_argument("--stage", default=None, help="Optional stage filter, for example small_high_priority.")
-    parser.add_argument("--manifest-only", action="store_true", help="Use YAML expected sizes only; no network call.")
+    parser.add_argument("--stage", default=None,
+                        help="Optional stage filter, for example small_high_priority.")
+    parser.add_argument("--manifest-only", action="store_true",
+                        help="Use YAML expected sizes only; no network call.")
     parser.add_argument("--include-disabled", action="store_true")
     parser.add_argument("--include-gated", action="store_true")
     parser.add_argument("--allow-outside-data-dir", action="store_true")
@@ -44,7 +44,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def active_configs(configs: list[download.DatasetConfig], args: argparse.Namespace) -> list[download.DatasetConfig]:
+def active_configs(
+    configs: list[download.DatasetConfig], args: argparse.Namespace
+) -> list[download.DatasetConfig]:
     result: list[download.DatasetConfig] = []
     for config in configs:
         if args.stage and config.stage != args.stage:

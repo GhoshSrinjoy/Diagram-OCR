@@ -6,12 +6,10 @@ import json
 import os
 import re
 import shutil
-import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 
 DATA_ROOT = Path("D:/data")
 DEFAULT_MANIFEST = Path(__file__).with_name("datasets.yaml")
@@ -429,7 +427,9 @@ def build_dataset_configs(raw: dict[str, Any]) -> list[DatasetConfig]:
                 enabled=bool(entry.get("enabled", defaults.get("enabled", True))),
                 gated=bool(entry.get("gated", defaults.get("gated", False))),
                 allow_patterns=unique_patterns([str(pattern) for pattern in allow_patterns]),
-                ignore_patterns=unique_patterns([str(pattern) for pattern in default_ignores + entry_ignores]),
+                ignore_patterns=unique_patterns(
+                    [str(pattern) for pattern in default_ignores + entry_ignores]
+                ),
                 expected_size_bytes=parse_size(expected_size),
                 max_allowed_bytes=parse_size(max_allowed_size),
                 local_dir=str(entry.get("local_dir") or repo_id.replace("/", "__")),
@@ -517,7 +517,8 @@ def selected_remote_files(config: DatasetConfig, siblings: list[Any]) -> tuple[R
             size = size if size is not None else getattr(lfs, "size", None)
             lfs_oid = getattr(lfs, "oid", None)
 
-        files.append(RemoteFile(path=path, size=int(size) if size is not None else None, blob_id=blob_id, lfs_oid=lfs_oid))
+        files.append(RemoteFile(path=path, size=int(size) if size is not None else None,
+                                blob_id=blob_id, lfs_oid=lfs_oid))
     return tuple(sorted(files, key=lambda item: item.path))
 
 
@@ -680,7 +681,9 @@ def check_disk_space(
         raise SystemExit("Cannot check disk space because at least one selected file has unknown size.")
 
     storage = raw_manifest.get("storage") or {}
-    manifest_min_free = parse_size(storage.get("min_free_after_download")) if isinstance(storage, dict) else None
+    manifest_min_free = (
+        parse_size(storage.get("min_free_after_download")) if isinstance(storage, dict) else None
+    )
     cli_min_free = bytes_from_gb(args.min_free_gb)
     min_free = cli_min_free if cli_min_free is not None else (manifest_min_free or 0)
 
@@ -837,7 +840,9 @@ def print_plan(deps: dict[str, Any], plans: list[DatasetPlan], output_dir: Path)
     total = total_plan_size(plans)
     table.caption = f"Total selected size: {format_size(deps, total)}"
     console.print(table)
-    console.print("Run with [bold]--download[/bold] to download. Without it, the script stays in dry-run mode.")
+    console.print(
+        "Run with [bold]--download[/bold] to download. Without it, the script stays in dry-run mode."
+    )
 
 
 def download_file(
@@ -943,7 +948,7 @@ def download_plans(
     remaining_column = RemainingDownloadColumn(deps).make()
 
     results: dict[str, Any] = {
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "output_dir": str(output_dir),
         "datasets": [],
     }
@@ -974,18 +979,24 @@ def download_plans(
             }
             for file_index, file in enumerate(plan.files):
                 try:
-                    status = download_file(deps, session, plan, file, progress, overall_task, current_task, args)
+                    status = download_file(
+                        deps, session, plan, file, progress, overall_task, current_task, args
+                    )
                 except AccessDeniedError as exc:
                     if args.fail_on_restricted:
                         raise
                     remaining_files = plan.files[file_index:]
                     shrink_overall_total(progress, overall_task, skipped_bytes(remaining_files))
                     progress.update(current_task, visible=False)
-                    progress.console.print(f"[yellow]Skipping restricted dataset[/yellow] {plan.config.repo_id}: {exc}")
+                    progress.console.print(
+                        f"[yellow]Skipping restricted dataset[/yellow] {plan.config.repo_id}: {exc}"
+                    )
                     dataset_result["skipped"] = True
                     dataset_result["skip_reason"] = "access_denied"
                     dataset_result["skip_message"] = str(exc)
-                    dataset_result["files"].append({"path": file.path, "size": file.size, "status": "access-denied"})
+                    dataset_result["files"].append(
+                        {"path": file.path, "size": file.size, "status": "access-denied"}
+                    )
                     break
                 dataset_result["files"].append({"path": file.path, "size": file.size, "status": status})
             results["datasets"].append(dataset_result)
