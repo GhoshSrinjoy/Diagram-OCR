@@ -123,7 +123,7 @@ These are the test-set results on 580 images from 12 sources. "Never trained" ma
 
 - **Accuracy:** measured on 60 validation images.
 - **Times:** they include starting llama.cpp and loading the model for every image; a long-running server answers faster.
-- **Where the files are:** the GGUF files are built by [`deploy/export_gguf.py`](src/deploy/export_gguf.py). In this setup they are in `D:/data/diagram_extraction/gguf/tadpole-0.8b/`. They are not yet published on a model hub.
+- **Where to get them:** on Hugging Face. The GGUF files are in [Srinjoy99/tadpole-0.8b-GGUF](https://huggingface.co/Srinjoy99/tadpole-0.8b-GGUF), and the PyTorch weights (bf16, 1.7 GB) are in [Srinjoy99/tadpole-0.8b](https://huggingface.co/Srinjoy99/tadpole-0.8b). The GGUF files are built by [`deploy/export_gguf.py`](src/deploy/export_gguf.py).
 
 ## Quick start
 
@@ -134,11 +134,12 @@ The quickest way to see Tadpole work is [`demo.ipynb`](demo.ipynb). It runs the 
 Get a [llama.cpp release](https://github.com/ggml-org/llama.cpp/releases) (b11577 or newer; Qwen3.5 support is required). Then:
 
 ```powershell
-llama-mtmd-cli -m tadpole-0.8b-Q4_K_M.gguf --mmproj mmproj-tadpole-0.8b-f16.gguf --jinja `
+llama-mtmd-cli -hf Srinjoy99/tadpole-0.8b-GGUF:Q4_K_M --jinja `
   --image diagram.png -p "Convert this diagram to DGM." `
   --temp 0 -n 1536 --image-min-tokens 64 --image-max-tokens 1225 > diagram.dgm
 ```
 
+- **Download:** `-hf` downloads the model and vision files from Hugging Face on first use. With local files, use `-m tadpole-0.8b-Q4_K_M.gguf --mmproj mmproj-tadpole-0.8b-f16.gguf` instead.
 - **GPU:** with a CUDA, Vulkan or Metal build, add `-ngl 99` to put the whole model on the GPU.
 - **Prompt template:** it is stored in the model file. `--jinja` makes llama.cpp use it.
 - **Boxes:** to get them too, use `-p "Convert this diagram to DGM with boxes."`.
@@ -160,10 +161,10 @@ python -m deploy.predict a.png b.jpg --to json,yaml,xml -o out/    # out/a.json,
 python -m deploy.predict photo.jpg --boxes --to json               # with 0-1000 boxes
 ```
 
-It uses the GPU when there is one.
+It downloads [Srinjoy99/tadpole-0.8b](https://huggingface.co/Srinjoy99/tadpole-0.8b) on first use, and uses the GPU when there is one.
 
 - **Partial output:** answers are parsed leniently, so a cut-off answer still yields every complete element.
-- **Another model:** `--checkpoint` selects a different checkpoint.
+- **Another model:** `--checkpoint` takes a different Hugging Face repo or a local folder.
 
 ### Converting and validating DGM / JSON / YAML / XML
 

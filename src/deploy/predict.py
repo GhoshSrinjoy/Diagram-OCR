@@ -25,12 +25,12 @@ from diagram_ir import dump, parse
 from train_v2.data import Collator, Example
 from train_v2.trainer import decode_answers, stop_token_ids
 
-DEFAULT_CHECKPOINT = Path("D:/data/diagram_extraction/runs/merges/rl-m2-wise")
+DEFAULT_CHECKPOINT = "Srinjoy99/tadpole-0.8b"  # Hugging Face repo; a local folder works too
 EXTENSIONS = {"dgm": ".dgm", "json": ".json", "yaml": ".yaml", "xml": ".xml"}
 MIN_PIXELS, MAX_PIXELS = 65536, 1254400  # as in training: ~64 to ~1225 visual tokens
 
 
-def predict(images: list[Path], checkpoint: Path, boxes: bool = False, batch_size: int = 4,
+def predict(images: list[Path], checkpoint: str | Path, boxes: bool = False, batch_size: int = 4,
             max_new_tokens: int = 1536) -> list[str]:
     """DGM text for each image."""
     cuda = torch.cuda.is_available()
@@ -58,7 +58,7 @@ def main() -> int:
     ap.add_argument("--to", default="dgm", help="comma-separated: dgm, json, yaml, xml")
     ap.add_argument("-o", "--out", type=Path, help="output folder (default: print to stdout)")
     ap.add_argument("--boxes", action="store_true", help="ask for element boxes (0..1000 coordinates)")
-    ap.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
+    ap.add_argument("--checkpoint", default=DEFAULT_CHECKPOINT, help="Hugging Face repo or local folder")
     ap.add_argument("--batch-size", type=int, default=4)
     args = ap.parse_args()
     warnings.filterwarnings("ignore")
