@@ -25,7 +25,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-TEMPLATE = Path(__file__).with_name("chat_template.jinja")
+TEMPLATE = Path(__file__).with_name("chat_template.jinja")  # Qwen-style DGM template (Tadpole 0.8B)
 STEM = "tadpole-0.8b"
 QUANTS = ("Q8_0", "Q4_K_M")
 
@@ -35,20 +35,23 @@ def run(cmd: list[str]) -> None:
     subprocess.run([str(c) for c in cmd], check=True)
 
 
-def export(checkpoint: Path, out: Path, llama_src: Path, llama_bin: Path, name: str) -> list[Path]:
+def export(checkpoint: Path, out: Path, llama_src: Path, llama_bin: Path, name: str, stem: str = STEM,
+           template: Path | None = TEMPLATE) -> list[Path]:
+    """`template=None` keeps the checkpoint's own chat template (models trained with it, e.g. Nano)."""
     out.mkdir(parents=True, exist_ok=True)
     convert = llama_src / "convert_hf_to_gguf.py"
-    raw = out / f"{STEM}-bf16.raw.gguf"
-    bf16 = out / f"{STEM}-bf16.gguf"
-    mmproj = out / f"mmproj-{STEM}-f16.gguf"
+    raw = out / f"{stem}-bf16.raw.gguf"
+    bf16 = out / f"{stem}-bf16.gguf"
+    mmproj = out / f"mmproj-{stem}-f16.gguf"
     run([sys.executable, convert, checkpoint, "--outtype", "bf16", "--outfile", raw])
+    template_args = ["--chat-template-file", template] if template else []
     run([sys.executable, llama_src / "gguf-py" / "gguf" / "scripts" / "gguf_new_metadata.py", raw, bf16,
-         "--chat-template-file", TEMPLATE, "--general-name", name, "--force"])
+         *template_args, "--general-name", name, "--force"])
     raw.unlink()
     run([sys.executable, convert, checkpoint, "--mmproj", "--outtype", "f16", "--outfile", mmproj])
     files = [bf16, mmproj]
     for q in QUANTS:
-        target = out / f"{STEM}-{q}.gguf"
+        target = out / f"{stem}-{q}.gguf"
         run([llama_bin / "llama-quantize.exe", bf16, target, q])
         files.append(target)
     return files
@@ -61,8 +64,13 @@ def main() -> int:
     ap.add_argument("--llama-src", type=Path, required=True, help="llama.cpp source checkout (converter)")
     ap.add_argument("--llama-bin", type=Path, required=True, help="llama.cpp binaries (llama-quantize)")
     ap.add_argument("--name", default="Tadpole 0.8B")
+    ap.add_argument("--stem", default=STEM, help="file name stem, e.g. tadpole-nano-258m")
+    ap.add_argument("--keep-template", action="store_true",
+                    help="keep the checkpoint's own chat template instead of the DGM template")
     args = ap.parse_args()
-    for f in export(args.checkpoint, args.out, args.llama_src, args.llama_bin, args.name):
+    files = export(args.checkpoint, args.out, args.llama_src, args.llama_bin, args.name, args.stem,
+                   None if args.keep_template else TEMPLATE)
+    for f in files:
         print(f"{f.stat().st_size / 1e6:8.0f} MB  {f}")
     return 0
 

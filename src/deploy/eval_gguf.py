@@ -33,8 +33,9 @@ CONFIG = Path(__file__).resolve().parents[1] / "train_v2" / "config_compare.yaml
 
 def command(args: argparse.Namespace, image: str, n_predict: int) -> list[str]:
     cmd = [str(args.llama_bin / "llama-mtmd-cli.exe"), "-m", str(args.model), "--mmproj", str(args.mmproj),
-           "--image", image, "-p", PROMPT_PLAIN, "--jinja", "--temp", "0", "-n", str(n_predict),
-           "--image-min-tokens", "64", "--image-max-tokens", "1225", "-c", "8192"]
+           "--image", image, "-p", PROMPT_PLAIN, "--jinja", "--temp", "0", "-n", str(n_predict), "-c", "8192"]
+    if not args.native_image_size:  # Tadpole 0.8B: the image token range it was trained with
+        cmd += ["--image-min-tokens", "64", "--image-max-tokens", "1225"]
     if args.gpu_layers:
         cmd += ["-ngl", str(args.gpu_layers)]
     if args.threads:
@@ -50,6 +51,8 @@ def main() -> int:
     ap.add_argument("--per-source", type=int, default=5)
     ap.add_argument("--gpu-layers", type=int, default=0, help="99 = whole model on the GPU (CUDA build)")
     ap.add_argument("--threads", type=int, default=0)
+    ap.add_argument("--native-image-size", action="store_true",
+                    help="tiled models (Nano): keep the image size stored in the model file")
     ap.add_argument("--torch-samples", type=Path, help="PyTorch predictions for the same images")
     ap.add_argument("--out", type=Path, help="default: next to the model, eval_<model>_<device>.json")
     args = ap.parse_args()

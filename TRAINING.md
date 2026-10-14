@@ -300,6 +300,44 @@ python -m train_v2.merge --out D:/data/diagram_extraction/runs/merges/rl-half-st
 python -m deploy.export_gguf D:/data/diagram_extraction/runs/merges/rl-m2-wise --out D:/data/diagram_extraction/gguf/tadpole-0.8b --llama-src <llama.cpp source> --llama-bin <llama.cpp binaries>
 ```
 
+## Tadpole Nano 258M
+
+The goal was a smaller model that runs faster on a CPU. The config is [`config_small.yaml`](src/train_v2/config_small.yaml).
+
+**Choosing a base.** The candidates had to be small, Apache-2.0 and convertible by llama.cpp.
+
+- LFM2.5-VL-450M was ruled out because its license restricts larger companies.
+- FastVLM was ruled out because it is licensed for research only.
+- The two that qualified, Granite-Docling-258M and SmolVLM-256M-Instruct, share an architecture: a SigLIP vision encoder that reads 512-px tiles, 64 tokens per tile, and a 576-wide, 30-layer language model.
+- Each trained 800 steps on the same data, then paused (`stop_after_steps`). Granite-Docling won on every overall measure at the same speed:
+
+| At step 800 (96 val images) | Granite-Docling | SmolVLM |
+|---|---:|---:|
+| Validation loss | **0.374** | 0.402 |
+| Node F1 | **0.582** | 0.469 |
+| Edge F1 | **0.193** | 0.150 |
+| Valid output | **91%** | 81% |
+
+**Image size was measured before training.** A tiled model at its native 2048 px reads up to 17 tiles, about 17,000 patches through the vision encoder. On a CPU (llama.cpp, 16 threads, 300 output tokens):
+
+| | Reading the image | Writing 300 tokens | Total, incl. loading |
+|---|---:|---:|---:|
+| Tadpole 0.8B | 0.4–0.7 s | 4.3–4.5 s | 7.1–7.6 s |
+| Nano at 2048 px | 2.7–3.9 s | 1.5–1.6 s | 5.3–6.9 s |
+| **Nano at 1536 px** | 2.1 s | ~1.5 s (same model) | **4.4–4.5 s** |
+| Nano at 1024 px | 0.9–1.5 s | ~1.5 s (same model) | 2.9–3.6 s |
+
+At 1536 px Nano sees about the same detail as Tadpole 0.8B and is about 1.7× faster in this test. The trainer writes the size (`image_longest_edge`) into the saved processor config, and the llama.cpp converter reads it from there, so training and inference match.
+
+**Training.** One run on the final data mix: every real training source plus the synthetic sets, 68,600 samples per epoch, 2 epochs (8,580 steps), learning rate 4e-5, about 9 hours. There was no RL.
+
+**Result.** On the 580 test images, Nano gets node F1 0.834 but edge F1 only **0.444**, against 0.846 for Tadpole 0.8B. It trails on every source.
+
+- **Why:** it reads text well but wires arrows badly. The likely reasons are its language model, about 4× smaller, and reading the image as separate tiles, so arrows that cross tile edges are harder to follow. Validation edge F1 levelled off around 0.49 over the last quarter of training.
+- **GGUF:** Q8_0 matches PyTorch (0.418 vs 0.428 on 60 images) at 4.8 s per diagram on the CPU. Q4_K_M breaks this small model (0.267), so it is not published.
+
+It is published as a smaller, faster option with these numbers on its card. [`config_compare_small.yaml`](src/train_v2/config_compare_small.yaml) reproduces the comparison.
+
 ## Lessons learned
 
 1. **Windows spills VRAM silently.** Cap the per-process memory fraction, so an oversized batch fails fast instead of running 10–100× slower.
@@ -310,10 +348,11 @@ python -m deploy.export_gguf D:/data/diagram_extraction/runs/merges/rl-m2-wise -
 6. **Synthetic data does not automatically transfer.** It taught synthetic styles well but hurt the real sources: real validation edge F1 fell from 0.865 to 0.829. Measure the real sets before trusting synthetic gains. RL and weight merging recovered the loss.
 7. **RL optimizes the metric you give it, bugs included.** A self-score test (a gold diagram against itself must get 1.0) would have caught the bug before training.
 8. **Small evaluations are noisy.** 8 images per source could not separate checkpoints. Use more images and paired bootstrap intervals.
+9. **Measure deployment speed before training a "faster" model.** Tiled vision encoders can cost more than a bigger model's whole answer. Nano at its native resolution would have been barely faster than Tadpole 0.8B.
 
 ## Where it is still weak, and next steps
 
 - **Large logic circuits.** Test edge F1 is 0.53 on LogicBench: 0.71 for circuits with up to 6 gates, but 0.27 for 11 or more, where about 29% of gates go missing. Upscaling the 512×512 images at test time did not help. The next step is synthetic circuits drawn like LogicBench's large ones, then a short training round.
 - **Arrows to pools in hand-drawn BPMN.** The final model writes 59 of the 103 in the test set (stage 2 wrote 110). The next round should replay hdBPMN and synthetic BPMN.
 - **Reading handwriting in flowcharts.** On the never-trained handwritten flowcharts, only 59% of node texts are exact.
-- **A smaller model for CPU.** A baby tadpole is planned: a "nano" model of about 256M parameters, to make CPU use faster.
+- **A smaller model for CPU.** Tadpole Nano 258M (above) is 1.5× faster but much weaker on arrows. Next options: RL on Nano, a ~500M base, or speeding up Tadpole 0.8B itself, for example by keeping it loaded as a server.

@@ -125,6 +125,23 @@ These are the test-set results on 580 images from 12 sources. "Never trained" ma
 - **Times:** they include starting llama.cpp and loading the model for every image; a long-running server answers faster.
 - **Where to get them:** on Hugging Face. The GGUF files are in [Srinjoy99/tadpole-0.8b-GGUF](https://huggingface.co/Srinjoy99/tadpole-0.8b-GGUF), and the PyTorch weights (bf16, 1.7 GB) are in [Srinjoy99/tadpole-0.8b](https://huggingface.co/Srinjoy99/tadpole-0.8b). The GGUF files are built by [`deploy/export_gguf.py`](src/deploy/export_gguf.py).
 
+### 🐣 Tadpole Nano 258M: smaller and faster, weaker on arrows
+
+There is also a baby tadpole: [Srinjoy99/tadpole-nano-258m](https://huggingface.co/Srinjoy99/tadpole-nano-258m), with GGUF files in [Srinjoy99/tadpole-nano-258m-GGUF](https://huggingface.co/Srinjoy99/tadpole-nano-258m-GGUF). It is fine-tuned from Granite-Docling-258M on the same data.
+
+| | Tadpole 0.8B | Tadpole Nano 258M |
+|---|---:|---:|
+| Arrows correct (edge F1, 580 test images) | **0.846** | 0.444 |
+| Boxes correct (node F1) | **0.930** | 0.834 |
+| Download (smallest GGUF + vision file) | 734 MB | **368 MB** |
+| CPU time per diagram (16 threads, 60 images) | 7.2 s | **4.8 s** |
+
+Nano reads boxes and text almost as well, but gets only about half the arrows right. Use it only when size or speed matters more than the connections.
+
+Run it the same way, with two differences:
+- use `-hf Srinjoy99/tadpole-nano-258m-GGUF:Q8_0`;
+- leave out `--image-min-tokens` and `--image-max-tokens`, because it uses the image size stored in its file.
+
 ## Quick start
 
 The quickest way to see Tadpole work is [`demo.ipynb`](demo.ipynb). It runs the commands below on example images.

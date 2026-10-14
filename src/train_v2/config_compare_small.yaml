@@ -1,0 +1,37 @@
+# Score the small model against Tadpole 0.8B on the same images. Read by `python -m train_v2.compare`.
+# Launch:  .\launch.ps1 -Module train_v2.compare -Config train_v2\config_compare_small.yaml
+# Same output folder, sets and seeds as config_compare.yaml, so Tadpole's results are reused from cache.
+output: D:/data/diagram_extraction/runs/compare-post-rl
+merge_root: D:/data/diagram_extraction/runs/merges
+
+data:
+  root: D:/data/diagram_extraction/processed_v2
+  images_root: D:/data/diagram_extraction
+  min_pixels: 65536
+  max_pixels: 1254400
+
+candidates:
+  rl-m2-wise:  D:/data/diagram_extraction/runs/merges/rl-m2-wise                      # Tadpole 0.8B
+  small-best:  D:/data/diagram_extraction/runs/small-granite-docling/best
+  small-final: D:/data/diagram_extraction/runs/small-granite-docling/final
+
+# The test set is scored for the ranking winner and this baseline; with Tadpole as the likely
+# winner, the small model's final checkpoint is the baseline so that both get paired test scores.
+baseline: small-final
+
+select:
+  split: val
+  per_source: 25
+  seed: 11
+  sources: [cas2uml, didi, flowchart_to_mermaid, flowgen, flowvqa, hdbpmn, image_to_mermaid_v3,
+            logicbench_1k, plantuml_stack_v2, synth_bpmn, synth_circuits, synth_plantuml]
+
+final:
+  split: test
+  per_source: 50
+  seed: 2
+  sources: [cas2uml, didi, flowchart_to_mermaid, flowgen, flowvqa, handwritten_fc_fa, hdbpmn,
+            image_to_mermaid_v3, logicbench_1k, plantuml_stack_v2, rakitha, uml_in_the_wild]
+
+batch_size: 8
+max_new_tokens: 1536
